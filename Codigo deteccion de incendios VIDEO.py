@@ -88,9 +88,15 @@ class IluminacionDetectada:
         mask_amarillo = cv2.inRange(hsv_frame, bajo_amarillo, alto_amarillo)
         mask_azul = cv2.inRange(hsv_frame, bajo_azul, alto_azul)
 
-        # Combinamos las máscaras
-        mascara = cv2.bitwise_or(mask_rojo1, mask_rojo2, mask_naranja, mask_amarillo)
-        mascara = cv2.bitwise_or(mask_azul, frame3, mascara, mascara_contorno)
+        # Combinamos las máscaras de color.
+        # cv2.bitwise_or recibe (src1, src2[, dst[, mask]]), solo dos imágenes por llamada. Al
+        # pasarle cuatro, la tercera se usaba como destino y la cuarta como máscara, de modo que
+        # el rojo se perdía por completo y el resultado acababa dominado por el brillo general
+        # (frame3) y los bordes (mascara_contorno) en lugar del color del fuego. Se unen ahora
+        # una a una. Para volver a incluir brillo y bordes, basta con añadirlos a esta tupla.
+        mascara = mask_rojo1
+        for otra in (mask_rojo2, mask_naranja, mask_amarillo, mask_azul):
+            mascara = cv2.bitwise_or(mascara, otra)
 
         # Aplicamos operaciones morfológicas para eliminar el ruido
         mascara = cv2.morphologyEx(mascara, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
